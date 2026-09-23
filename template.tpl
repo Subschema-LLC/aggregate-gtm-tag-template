@@ -89,7 +89,8 @@ ___TEMPLATE_PARAMETERS___
     "type": "CHECKBOX",
     "name": "log",
     "checkboxText": "Log failures to the console",
-    "simpleValueType": true
+    "simpleValueType": true,
+    "help": "Logs only in GTM preview/debug mode."
   }
 ]
 
@@ -239,7 +240,7 @@ ___WEB_PERMISSIONS___
           "key": "environments",
           "value": {
             "type": 1,
-            "string": "all"
+            "string": "debug"
           }
         }
       ]
