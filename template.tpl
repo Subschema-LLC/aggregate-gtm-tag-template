@@ -305,9 +305,9 @@ scenarios:
     });
 
     mock('callInWindow', function(path, eventName, properties) {
-      assertThat(arguments.length).isEqualTo(2);
       assertThat(path).isEqualTo('aggregate.track');
       assertThat(eventName).isEqualTo('Page Viewed');
+      assertThat(properties).isEqualTo(undefined);
     });
 
     runCode(mockData);
