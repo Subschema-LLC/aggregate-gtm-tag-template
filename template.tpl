@@ -265,7 +265,7 @@ scenarios:
 - name: tracks an Aggregate event after loading the SDK
   code: |-
     const mockData = {
-      scriptUrl: 'https://cdn.example.com/aggregate.js',
+      scriptUrl: 'https://cdn.jsdelivr.net/gh/Subschema-LLC/aggregate@main/dist/aggregate.js',
       eventName: 'Signup Completed',
       eventProperties: [
         {name: 'plan', value: 'pro'},
@@ -274,8 +274,8 @@ scenarios:
     };
 
     mock('injectScript', function(url, onSuccess, onFailure, cacheToken) {
-      assertThat(url).isEqualTo('https://cdn.example.com/aggregate.js');
-      assertThat(cacheToken).isEqualTo('https://cdn.example.com/aggregate.js');
+      assertThat(url).isEqualTo('https://cdn.jsdelivr.net/gh/Subschema-LLC/aggregate@main/dist/aggregate.js');
+      assertThat(cacheToken).isEqualTo('https://cdn.jsdelivr.net/gh/Subschema-LLC/aggregate@main/dist/aggregate.js');
       onSuccess();
     });
 
@@ -300,7 +300,7 @@ scenarios:
 - name: omits event properties when none are configured
   code: |-
     const mockData = {
-      scriptUrl: 'https://cdn.example.com/aggregate.js',
+      scriptUrl: 'https://cdn.jsdelivr.net/gh/Subschema-LLC/aggregate@main/dist/aggregate.js',
       eventName: 'Page Viewed'
     };
 
@@ -321,7 +321,7 @@ scenarios:
 - name: fails when the Aggregate tracking method is missing
   code: |-
     const mockData = {
-      scriptUrl: 'https://cdn.example.com/aggregate.js',
+      scriptUrl: 'https://cdn.jsdelivr.net/gh/Subschema-LLC/aggregate@main/dist/aggregate.js',
       eventName: 'Signup Completed'
     };
 
@@ -340,7 +340,7 @@ scenarios:
 - name: fails when the Aggregate SDK script cannot be loaded
   code: |-
     const mockData = {
-      scriptUrl: 'https://cdn.example.com/aggregate.js',
+      scriptUrl: 'https://cdn.jsdelivr.net/gh/Subschema-LLC/aggregate@main/dist/aggregate.js',
       eventName: 'Signup Completed'
     };
 
