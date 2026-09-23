@@ -1,0 +1,5 @@
+homepage: "https://github.com/Subschema-LLC/aggregate"
+documentation: "https://github.com/Subschema-LLC/aggregate-gtm-tag-template#readme"
+versions:
+  - sha: 6e39dcbe14049f701d25e7147b94e6ffe33fd42b
+    changeNotes: Initial Aggregate GTM tag template release.
