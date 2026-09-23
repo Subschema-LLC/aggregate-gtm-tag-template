@@ -99,6 +99,7 @@ ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 const injectScript = require('injectScript');
 const copyFromWindow = require('copyFromWindow');
 const callInWindow = require('callInWindow');
+const getType = require('getType');
 const makeTableMap = require('makeTableMap');
 const log = require('logToConsole');
 
@@ -116,7 +117,7 @@ const onFailure = function() {
 const onSuccess = function() {
   const trackMethod = copyFromWindow(methodPath);
 
-  if (typeof trackMethod !== 'function') {
+  if (getType(trackMethod) !== 'function') {
     if (data.log) {
       log('Aggregate tracking method not found at ' + methodPath + '.');
     }
