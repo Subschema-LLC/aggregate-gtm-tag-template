@@ -105,7 +105,9 @@ const log = require('logToConsole');
 
 const scriptUrl = data.scriptUrl;
 const methodPath = 'aggregate.track';
-const eventProperties = makeTableMap(data.eventProperties || [], 'name', 'value');
+const eventProperties = data.eventProperties && data.eventProperties.length
+  ? makeTableMap(data.eventProperties, 'name', 'value')
+  : null;
 
 const onFailure = function() {
   if (data.log) {
@@ -125,7 +127,11 @@ const onSuccess = function() {
     return;
   }
 
-  callInWindow(methodPath, data.eventName, eventProperties);
+  if (eventProperties) {
+    callInWindow(methodPath, data.eventName, eventProperties);
+  } else {
+    callInWindow(methodPath, data.eventName);
+  }
   data.gtmOnSuccess();
 };
 
@@ -233,7 +239,7 @@ ___WEB_PERMISSIONS___
           "key": "environments",
           "value": {
             "type": 1,
-            "string": "debug"
+            "string": "all"
           }
         }
       ]
@@ -276,6 +282,32 @@ scenarios:
         plan: 'pro',
         source: 'gtm'
       });
+    });
+
+    runCode(mockData);
+
+    assertApi('gtmOnSuccess').wasCalled();
+- name: omits event properties when none are configured
+  code: |-
+    const mockData = {
+      scriptUrl: 'https://cdn.example.com/aggregate.js',
+      eventName: 'Page Viewed'
+    };
+
+    mock('injectScript', function(url, onSuccess) {
+      onSuccess();
+    });
+
+    mock('copyFromWindow', function(path) {
+      if (path === 'aggregate.track') {
+        return function() {};
+      }
+    });
+
+    mock('callInWindow', function(path, eventName, properties) {
+      assertThat(path).isEqualTo('aggregate.track');
+      assertThat(eventName).isEqualTo('Page Viewed');
+      assertThat(properties).isEqualTo(undefined);
     });
 
     runCode(mockData);
