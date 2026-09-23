@@ -45,7 +45,7 @@ ___TEMPLATE_PARAMETERS___
       {
         "type": "REGEX",
         "args": [
-          "^https://(cdn\\.jsdelivr\\.net/gh/Subschema-LLC/aggregate.*\\.js(\\?.*)?|raw\\.githubusercontent\\.com/Subschema-LLC/aggregate/.*\\.js(\\?.*)?)$"
+          "^https://(cdn\\.jsdelivr\\.net/gh/Subschema-LLC/aggregate(@|/).*(\\.js)(\\?.*)?|raw\\.githubusercontent\\.com/Subschema-LLC/aggregate/.*\\.js(\\?.*)?)$"
         ]
       }
     ]
@@ -312,6 +312,12 @@ scenarios:
       if (path === 'aggregate.track') {
         return function() {};
       }
+    });
+
+    mock('callInWindow', function(path, eventName, properties) {
+      assertThat(path).isEqualTo('aggregate.track');
+      assertThat(eventName).isEqualTo('Page Viewed');
+      assertThat(properties).isEqualTo(undefined);
     });
 
     runCode(mockData);
