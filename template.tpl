@@ -312,6 +312,7 @@ scenarios:
 
     runCode(mockData);
 
+    assertApi('callInWindow').wasCalled();
     assertApi('gtmOnSuccess').wasCalled();
 - name: fails when the Aggregate tracking method is missing
   code: |-
