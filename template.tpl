@@ -45,7 +45,7 @@ ___TEMPLATE_PARAMETERS___
       {
         "type": "REGEX",
         "args": [
-          "^(https://).*(\\.js)(\\?.*)?$"
+          "^https://(cdn\\.jsdelivr\\.net/gh/Subschema-LLC/aggregate.*\\.js(\\?.*)?|raw\\.githubusercontent\\.com/Subschema-LLC/aggregate/.*\\.js(\\?.*)?)$"
         ]
       }
     ]
@@ -73,7 +73,12 @@ ___TEMPLATE_PARAMETERS___
         "displayName": "Property name",
         "type": "TEXT",
         "isUnique": true,
-        "defaultValue": ""
+        "defaultValue": "",
+        "valueValidators": [
+          {
+            "type": "NON_EMPTY"
+          }
+        ]
       },
       {
         "name": "value",
@@ -156,7 +161,11 @@ ___WEB_PERMISSIONS___
             "listItem": [
               {
                 "type": 1,
-                "string": "https://*"
+                "string": "https://cdn.jsdelivr.net/gh/Subschema-LLC/aggregate*"
+              },
+              {
+                "type": 1,
+                "string": "https://raw.githubusercontent.com/Subschema-LLC/aggregate/*"
               }
             ]
           }

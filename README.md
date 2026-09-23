@@ -11,7 +11,9 @@ Google Tag Manager community template for the Aggregate browser SDK.
 
 1. Import the repository's `template.tpl` into a web container as a custom template.
 2. Create a tag from the imported **Aggregate** template.
-3. Set the **Aggregate script URL** to the published Aggregate browser SDK URL.
+3. Set the **Aggregate script URL** to an Aggregate-published SDK URL from a supported origin:
+   - `https://cdn.jsdelivr.net/gh/Subschema-LLC/aggregate...`
+   - `https://raw.githubusercontent.com/Subschema-LLC/aggregate/...`
 4. Set the **Event name** and any optional event properties.
 5. Attach the trigger that should fire the Aggregate event.
 
