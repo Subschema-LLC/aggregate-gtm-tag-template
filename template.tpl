@@ -304,15 +304,9 @@ scenarios:
       }
     });
 
-    mock('callInWindow', function(path, eventName, properties) {
-      assertThat(path).isEqualTo('aggregate.track');
-      assertThat(eventName).isEqualTo('Page Viewed');
-      assertThat(properties).isEqualTo(undefined);
-    });
-
     runCode(mockData);
 
-    assertApi('callInWindow').wasCalled();
+    assertApi('callInWindow').wasCalledWith('aggregate.track', 'Page Viewed');
     assertApi('gtmOnSuccess').wasCalled();
 - name: fails when the Aggregate tracking method is missing
   code: |-
