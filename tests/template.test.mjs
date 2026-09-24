@@ -268,6 +268,15 @@ test('editor validators accept supported script URLs and event names', () => {
   }
 });
 
-for (const scenario of readScenarios(sections.get('TESTS'))) {
+const scenarios = readScenarios(sections.get('TESTS'));
+
+test('exported scenario names use only letters numbers and spaces', () => {
+  // Keep names in a conservative subset accepted by GTM; dots prevent import.
+  for (const { name } of scenarios) {
+    assert.match(name, /^[A-Za-z0-9 ]+$/, `Unsupported character in GTM test name: ${name}`);
+  }
+});
+
+for (const scenario of scenarios) {
   test(scenario.name, () => runScenario(scenario));
 }
