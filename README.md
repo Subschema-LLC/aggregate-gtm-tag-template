@@ -10,8 +10,9 @@ Use your installation's configured `/aggregate.js` route, which includes the sav
 
 ## Initialize the SDK
 
-1. In a GTM **Web** container, open **Templates → Tag Templates → New → Import**, import [template.tpl](template.tpl), and save it.
-2. Create an **Aggregate** tag with **Tag action** set to **Initialize SDK (automatic page view)** and fill in:
+1. In a GTM **Web** container, open **Templates → Tag Templates → New → Import** and import [template.tpl](template.tpl).
+2. In the template editor, open **Permissions → Injects scripts**. Replace `https://analytics.example.com/*` with your Aggregate host, for example `https://stats.your-company.com/*`, then save the template. The host must match the **Aggregate script URL** used below.
+3. Create an **Aggregate** tag with **Tag action** set to **Initialize SDK (automatic page view)** and fill in:
 
    | Field | Example | Purpose |
    | --- | --- | --- |
@@ -19,7 +20,7 @@ Use your installation's configured `/aggregate.js` route, which includes the sav
    | Collector endpoint | `https://analytics.example.com/api/receive` | HTTPS ingestion URL for your installation. |
    | Public website token | Your registered website's token | Identifies the website receiving events. |
 
-3. Fire this tag early, for example with **Initialization – All Pages**. Use one initialization tag and one endpoint/token configuration per page.
+4. Fire this tag early, for example with **Initialization – All Pages**. Use one initialization tag and one endpoint/token configuration per page.
 
 The template adds URL-encoded `endpoint` and `token` query parameters to the script URL. Enter the base SDK URL, optionally with `?min=1`; do not add configuration parameters yourself. The public token is visible in the script request URL.
 
@@ -45,7 +46,9 @@ The SDK and server apply the data model's consent, type, and collection filters.
 
 Initialization leaves Aggregate's consent state unchanged; a fresh SDK starts with unknown consent and anonymous tracking. This template does not map GTM consent settings or grant enhanced consent. Connect your consent manager to Aggregate's consent API as described in the SDK documentation. Anonymous page views and named events can continue after rejection, subject to the server's collection rules.
 
-The template requests permission to inject HTTPS scripts because Aggregate installations use their own hosts. You can narrow that permission to your installation's host and SDK path. It also reads and executes `Aggregate.emit`; console logging is restricted to GTM preview/debug mode and requires the **Log failures to the console** checkbox.
+The script permission ships with the example pattern `https://analytics.example.com/*`; replace the host with your installation's host during setup. GTM requires HTTPS, a hostname, and a path pattern; a hostname consisting only of `*` is invalid. You can narrow the path to `/aggregate.js*`, or `/metrics/aggregate.js*` for a deployment under `/metrics`. Keep the trailing `*` to allow the SDK configuration query parameters. Changing the tag's script URL does not update its template permission.
+
+The template also reads and executes `Aggregate.emit`; console logging is restricted to GTM preview/debug mode and requires the **Log failures to the console** checkbox.
 
 ## Verify before publishing
 

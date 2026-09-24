@@ -55,7 +55,7 @@ ___TEMPLATE_PARAMETERS___
     "name": "scriptUrl",
     "displayName": "Aggregate script URL",
     "simpleValueType": true,
-    "help": "Your installation's HTTPS /aggregate.js URL, optionally with ?min=1. Use the configured server route and the default Aggregate namespace.",
+    "help": "Your installation's HTTPS /aggregate.js URL, optionally with ?min=1. Set your host under template Permissions > Injects scripts before saving. Use the configured server route and the default Aggregate namespace.",
     "enablingConditions": [
       {"paramName": "action", "paramValue": "initialize", "type": "EQUALS"}
     ],
@@ -312,7 +312,7 @@ ___WEB_PERMISSIONS___
             "listItem": [
               {
                 "type": 1,
-                "string": "https://*/*aggregate.js*"
+                "string": "https://analytics.example.com/*"
               }
             ]
           }
@@ -411,6 +411,7 @@ ___TESTS___
 scenarios:
 - name: initializes the configured SDK without emitting an extra page view
   code: |-
+    mock('queryPermission', function() { return true; });
     const expectedUrl = 'https://analytics.example.com/aggregate.js?endpoint=https%3A%2F%2Fcollector.example.com%2Fapi%2Freceive&token=public%2Btoken%26value';
     mock('injectScript', function(url, onSuccess, onFailure, cacheToken) {
       assertThat(url).isEqualTo(expectedUrl);
@@ -428,6 +429,7 @@ scenarios:
     assertApi('callInWindow').wasNotCalled();
 - name: preserves the minified route and deployment path prefix
   code: |-
+    mock('queryPermission', function() { return true; });
     const expectedUrl = 'https://analytics.example.com/metrics/aggregate.js?min=1&endpoint=https%3A%2F%2Fanalytics.example.com%2Fmetrics%2Fapi%2Freceive&token=public-token';
     mock('injectScript', function(url, onSuccess, onFailure, cacheToken) {
       assertThat(url).isEqualTo(expectedUrl);
@@ -500,6 +502,7 @@ scenarios:
     assertApi('gtmOnSuccess').wasNotCalled();
 - name: fails when the SDK cannot be downloaded
   code: |-
+    mock('queryPermission', function() { return true; });
     mock('injectScript', function(url, onSuccess, onFailure) { onFailure(); });
     runCode({action: 'initialize', scriptUrl: 'https://analytics.example.com/aggregate.js',
       endpoint: 'https://analytics.example.com/api/receive', websiteToken: 'public-token'});
@@ -509,6 +512,7 @@ scenarios:
     assertApi('gtmOnSuccess').wasNotCalled();
 - name: fails initialization when the SDK emit method is not callable
   code: |-
+    mock('queryPermission', function() { return true; });
     mock('injectScript', function(url, onSuccess) { onSuccess(); });
     mock('copyFromWindow', function() { return 'not a function'; });
     runCode({action: 'initialize', scriptUrl: 'https://analytics.example.com/aggregate.js',

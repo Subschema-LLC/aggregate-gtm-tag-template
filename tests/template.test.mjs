@@ -103,7 +103,9 @@ function runScenario({ name, code }) {
     },
     queryPermission(permission) {
       assert.ok(['inject_script', 'logging'].includes(permission), `Unknown permission: ${permission}`);
-      return true;
+      // Scenarios must explicitly grant permissions instead of depending on
+      // the installation hostname configured in the template editor.
+      return false;
     },
     injectScript: () => assert.fail('Mock injectScript and invoke its success or failure callback'),
     copyFromWindow: () => undefined,
@@ -223,7 +225,10 @@ test('permissions allow HTTPS loading, Aggregate.emit access, and debug logging'
   assert.deepEqual(Object.keys(settings).sort(), ['access_globals', 'inject_script', 'logging']);
   assert.ok(settings.inject_script.urls.length);
   for (const pattern of settings.inject_script.urls) {
-    assert.ok(pattern.startsWith('https://'), `Script permission must require HTTPS: ${pattern}`);
+    // Use a concrete deployment host and an explicit path; a bare wildcard host
+    // is rejected by GTM even though it looks like a general URL glob.
+    assert.match(pattern, /^https:\/\/[A-Za-z0-9.-]+(?::[0-9]+)?\/[^\s]*$/,
+      `Script permission must specify an HTTPS hostname and path: ${pattern}`);
   }
   assert.deepEqual(settings.access_globals.keys, [
     { key: 'Aggregate.emit', read: true, write: false, execute: true },
