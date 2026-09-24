@@ -507,7 +507,7 @@ scenarios:
     assertApi('callInWindow').wasNotCalled();
     assertApi('gtmOnFailure').wasCalled();
     assertApi('gtmOnSuccess').wasNotCalled();
-- name: fails initialization when the script exposes no callable Aggregate.emit
+- name: fails initialization when the SDK emit method is not callable
   code: |-
     mock('injectScript', function(url, onSuccess) { onSuccess(); });
     mock('copyFromWindow', function() { return 'not a function'; });
@@ -554,7 +554,7 @@ scenarios:
     assertApi('callInWindow').wasNotCalled();
     assertApi('gtmOnFailure').wasCalled();
     assertApi('gtmOnSuccess').wasNotCalled();
-- name: propagates SDK rejection of an identifier-like event name
+- name: propagates SDK rejection of an identifier like event name
   code: |-
     mock('copyFromWindow', function() { return function() {}; });
     mock('callInWindow', function() { return false; });
