@@ -181,6 +181,11 @@ function runScenario({ name, code }) {
 test('template metadata and editor parameters contain valid JSON for a web tag', () => {
   assert.equal(info.type, 'TAG');
   assert.deepEqual(info.containerContexts, ['WEB']);
+  assert.equal(info.displayName, 'Aggregate');
+  assert.ok(Array.isArray(info.categories) && info.categories.length >= 1 && info.categories.length <= 3);
+  assert.equal(info.brand.displayName, 'Subschema LLC');
+  assert.match(info.brand.thumbnail, new RegExp("^data:image/(?:png|jpeg|gif);base64,[A-Za-z0-9+/=]+$"));
+  assert.ok(info.brand.thumbnail.length < 50 * 1024 * 1.37, 'Thumbnail must be under 50kB');
   assert.ok(Array.isArray(parameters));
   assert.ok(Array.isArray(permissions));
   const names = parameters.map(parameter => parameter.name);

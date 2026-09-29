@@ -1,5 +1,7 @@
 # Aggregate Google Tag Manager template
 
+[![CI](https://github.com/Subschema-LLC/aggregate-gtm-tag-template/actions/workflows/ci.yml/badge.svg)](https://github.com/Subschema-LLC/aggregate-gtm-tag-template/actions/workflows/ci.yml)
+
 A web-container template for initializing the [Aggregate browser SDK](https://github.com/Subschema-LLC/aggregate/blob/master/docs/TRACKING.md) and sending named events through `window.Aggregate.emit()`.
 
 ## Before you start
@@ -71,3 +73,7 @@ These tests use mocked GTM APIs. GTM's **Tests** tab and **Preview** remain nece
 - [metadata.yaml](metadata.yaml): Community Template Gallery release history.
 
 Before publishing to the Community Template Gallery, commit the tested template, then add a `versions` entry in `metadata.yaml` with that commit SHA and release notes. The SHA must identify the version intended for publication. Keep the newest entry first and preserve release history.
+
+## License
+
+This project is licensed under the [Apache License, Version 2.0](LICENSE).
