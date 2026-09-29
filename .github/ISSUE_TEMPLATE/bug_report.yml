@@ -1,0 +1,52 @@
+name: Bug report
+description: Create a report to help us improve the Aggregate GTM template
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Before opening, please make sure you have verified the behavior in GTM Preview mode.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: dropdown
+    id: action
+    attributes:
+      label: Tag Action
+      description: Which tag action triggered the issue?
+      options:
+        - "Initialize SDK (automatic page view)"
+        - "Send event"
+        - "Both / General"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can maintainers reproduce this behavior in GTM?
+      placeholder: |
+        1. Import template.tpl
+        2. Create tag with action ...
+        3. Preview container on ...
+        4. Observe error in console / tag summary
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser version, GTM container type (Web), Aggregate SDK version.
+      placeholder: Chrome 128, GTM Web Container, Aggregate SDK v1.0.0

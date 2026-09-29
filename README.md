@@ -74,6 +74,11 @@ These tests use mocked GTM APIs. GTM's **Tests** tab and **Preview** remain nece
 
 Before publishing to the Community Template Gallery, commit the tested template, then add a `versions` entry in `metadata.yaml` with that commit SHA and release notes. The SHA must identify the version intended for publication. Keep the newest entry first and preserve release history.
 
+
+## Security
+
+For security policies and vulnerability disclosure, please see [SECURITY.md](.github/SECURITY.md).
+
 ## License
 
 This project is licensed under the [Apache License, Version 2.0](LICENSE).
