@@ -1,5 +1,9 @@
+# Community Template Gallery release history
+# Versions follow the v[YEAR].[MN].[INDEX] convention (e.g. v2026.09.01, where INDEX is the monthly release number).
 homepage: "https://github.com/Subschema-LLC/aggregate"
 documentation: "https://github.com/Subschema-LLC/aggregate-gtm-tag-template#readme"
 versions:
+  - sha: d1ea802a8bf3df0bcf3b3a62888c3ee079d20c57
+    changeNotes: "v2026.09.01: Production release with SDK initialization, event tagging, customizable tracker object name (js_namespace), conversion goals, brand icon, and Apache 2.0 license."
   - sha: 6e39dcbe14049f701d25e7147b94e6ffe33fd42b
-    changeNotes: Initial Aggregate GTM tag template release.
+    changeNotes: "Initial Aggregate GTM tag template release."
