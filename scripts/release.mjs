@@ -8,20 +8,21 @@
 
 import { execSync } from "node:child_process";
 
-export function getNextVersion(date = new Date()) {
+export function getNextVersion(date = new Date(), customTags = null) {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const prefix = `v${year}.${month}.`;
 
-  let tags = [];
-  try {
-    const output = execSync("git tag -l", { encoding: "utf8" });
-    tags = output.split("\n").map(t => t.trim()).filter(Boolean);
-  } catch {
-    tags = [];
+  let tags = customTags;
+  if (!tags) {
+    try {
+      const output = execSync("git tag -l", { encoding: "utf8" });
+      tags = output.split("\n").map(t => t.trim()).filter(Boolean);
+    } catch {
+      tags = [];
+    }
   }
 
-  const regex = new RegExp(`^v${year}\\\\.${month}\\\\.([0-9]{2,})$`);
+  const regex = new RegExp("^v" + year + "\\." + month + "\\.([0-9]+)$");
   const existingIndices = tags
     .map(t => regex.exec(t))
     .filter(Boolean)
@@ -29,7 +30,7 @@ export function getNextVersion(date = new Date()) {
 
   const nextIndex = existingIndices.length > 0 ? Math.max(...existingIndices) + 1 : 1;
   const indexStr = String(nextIndex).padStart(2, "0");
-  return `v${year}.${month}.${indexStr}`;
+  return "v" + year + "." + month + "." + indexStr;
 }
 
 if (process.argv[1] && process.argv[1].endsWith("release.mjs")) {
@@ -41,6 +42,6 @@ if (process.argv[1] && process.argv[1].endsWith("release.mjs")) {
     process.exit(0);
   }
 
-  console.log(`Next release version: ${nextVer}`);
-  console.log(`Convention: v[YEAR].[MN].[INDEX] (where INDEX is the release counter for this month)`);
+  console.log("Next release version: " + nextVer);
+  console.log("Convention: v[YEAR].[MN].[INDEX] (where INDEX is the release counter for this month)");
 }
