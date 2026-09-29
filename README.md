@@ -119,6 +119,12 @@ v[YEAR].[MN].[INDEX]
    Pushing the tag triggers the automated [Release Workflow](.github/workflows/release.yml) to run tests, bundle release artifacts (`template.tpl`, `metadata.yaml`, `LICENSE`), and publish the GitHub Release.
 
 
+## Contributing
+
+Contributions are welcome! Please start working branches from `development` and target `development` when opening pull requests.
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for our branching model, privacy invariants, and PR guidelines. All contributors are expected to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Security
 
 For security policies and vulnerability disclosure, please see [SECURITY.md](.github/SECURITY.md).

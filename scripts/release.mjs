@@ -8,6 +8,10 @@
 
 import { execSync } from "node:child_process";
 
+export function validateTag(tag) {
+  return /^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}$/.test(tag);
+}
+
 export function getNextVersion(date = new Date(), customTags = null) {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
@@ -35,6 +39,17 @@ export function getNextVersion(date = new Date(), customTags = null) {
 
 if (process.argv[1] && process.argv[1].endsWith("release.mjs")) {
   const arg = process.argv[2];
+
+  if (arg === "--check-tag") {
+    const tag = process.argv[3];
+    if (!tag || !validateTag(tag)) {
+      console.error(`Invalid tag: ${tag}. Expected format: vYYYY.MM.NN`);
+      process.exit(1);
+    }
+    console.log(`Tag ${tag} is valid.`);
+    process.exit(0);
+  }
+
   const nextVer = getNextVersion();
 
   if (arg === "--next") {
