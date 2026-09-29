@@ -55,9 +55,13 @@ ___TEMPLATE_PARAMETERS___
     "name": "scriptUrl",
     "displayName": "Aggregate script URL",
     "simpleValueType": true,
-    "help": "Your installation's HTTPS /aggregate.js URL, optionally with ?min=1. Set your host under template Permissions > Injects scripts before saving. Use the configured server route and the default Aggregate namespace.",
+    "help": "Your installation's HTTPS /aggregate.js URL, optionally with ?min=1. Set your host under template Permissions > Injects scripts before saving.",
     "enablingConditions": [
-      {"paramName": "action", "paramValue": "initialize", "type": "EQUALS"}
+      {
+        "paramName": "action",
+        "paramValue": "initialize",
+        "type": "EQUALS"
+      }
     ],
     "valueValidators": [
       {
@@ -78,11 +82,22 @@ ___TEMPLATE_PARAMETERS___
     "simpleValueType": true,
     "help": "Absolute HTTPS collector URL, for example https://analytics.example.com/api/receive.",
     "enablingConditions": [
-      {"paramName": "action", "paramValue": "initialize", "type": "EQUALS"}
+      {
+        "paramName": "action",
+        "paramValue": "initialize",
+        "type": "EQUALS"
+      }
     ],
     "valueValidators": [
-      {"type": "NON_EMPTY"},
-      {"type": "REGEX", "args": ["^https://[^\\s/?#@\\\\]+([/?][^\\s#\\\\]*)?$"]}
+      {
+        "type": "NON_EMPTY"
+      },
+      {
+        "type": "REGEX",
+        "args": [
+          "^https://[^\\s/?#@\\\\]+([/?][^\\s#\\\\]*)?$"
+        ]
+      }
     ]
   },
   {
@@ -92,18 +107,30 @@ ___TEMPLATE_PARAMETERS___
     "simpleValueType": true,
     "help": "Public tracking token from your registered website, not an organization sharing token.",
     "enablingConditions": [
-      {"paramName": "action", "paramValue": "initialize", "type": "EQUALS"}
+      {
+        "paramName": "action",
+        "paramValue": "initialize",
+        "type": "EQUALS"
+      }
     ],
-    "valueValidators": [{"type": "NON_EMPTY"}]
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      }
+    ]
   },
   {
     "type": "TEXT",
     "name": "eventName",
     "displayName": "Event name",
     "simpleValueType": true,
-    "help": "Fixed event name passed to Aggregate.emit(), for example signup_completed. Initialize the SDK before this tag fires.",
+    "help": "Fixed event name passed to the SDK emit method (for example signup_completed). Initialize the SDK before this tag fires.",
     "enablingConditions": [
-      {"paramName": "action", "paramValue": "event", "type": "EQUALS"}
+      {
+        "paramName": "action",
+        "paramValue": "event",
+        "type": "EQUALS"
+      }
     ],
     "alwaysInSummary": true,
     "valueValidators": [
@@ -112,7 +139,9 @@ ___TEMPLATE_PARAMETERS___
       },
       {
         "type": "REGEX",
-        "args": ["^[A-Za-z][A-Za-z0-9_.:-]{0,99}$"]
+        "args": [
+          "^[A-Za-z][A-Za-z0-9_.:-]{0,99}$"
+        ]
       }
     ]
   },
@@ -121,7 +150,11 @@ ___TEMPLATE_PARAMETERS___
     "name": "eventProperties",
     "displayName": "Event properties",
     "enablingConditions": [
-      {"paramName": "action", "paramValue": "event", "type": "EQUALS"}
+      {
+        "paramName": "action",
+        "paramValue": "event",
+        "type": "EQUALS"
+      }
     ],
     "simpleTableColumns": [
       {
@@ -136,7 +169,9 @@ ___TEMPLATE_PARAMETERS___
           },
           {
             "type": "REGEX",
-            "args": ["^[A-Za-z][A-Za-z0-9_.-]{0,63}$"]
+            "args": [
+              "^[A-Za-z][A-Za-z0-9_.-]{0,63}$"
+            ]
           }
         ]
       },
@@ -149,6 +184,47 @@ ___TEMPLATE_PARAMETERS___
     ],
     "newRowButtonText": "Add property",
     "help": "Up to 50 unique scalar properties for Aggregate.emit(). Use typed GTM variables for numbers, booleans, or null. The SDK and server apply consent and collection rules."
+  },
+  {
+    "type": "TEXT",
+    "name": "goalEvent",
+    "displayName": "Conversion goal code",
+    "simpleValueType": true,
+    "help": "Optional conversion goal code matching an enabled goal in config/goals.yaml (for example signup or purchase). Forwarded to the SDK emit method as the goal argument.",
+    "enablingConditions": [
+      {
+        "paramName": "action",
+        "paramValue": "event",
+        "type": "EQUALS"
+      }
+    ],
+    "valueValidators": [
+      {
+        "type": "REGEX",
+        "args": [
+          "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
+    "name": "objectName",
+    "displayName": "Tracker global object name",
+    "simpleValueType": true,
+    "defaultValue": "Aggregate",
+    "help": "JavaScript global window object name for the SDK (js_namespace in aggregate.yaml, default: Aggregate). If customized, also update template Permissions > Accesses global variables to allow read and execute on <objectName>.emit.",
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      },
+      {
+        "type": "REGEX",
+        "args": [
+          "^[A-Za-z][A-Za-z0-9_]{0,63}$"
+        ]
+      }
+    ]
   },
   {
     "type": "CHECKBOX",
@@ -170,8 +246,6 @@ const parseUrl = require('parseUrl');
 const encodeUriComponent = require('encodeUriComponent');
 const queryPermission = require('queryPermission');
 const log = require('logToConsole');
-
-const methodPath = 'Aggregate.emit';
 
 const fail = function(message) {
   if (data.log && queryPermission('logging')) {
@@ -209,6 +283,17 @@ const validName = function(value, maxLength, extraCharacters) {
   return true;
 };
 
+let objectName = 'Aggregate';
+if (data.objectName !== undefined) {
+  if (!validName(data.objectName, 64, '_') ||
+      data.objectName === 'constructor' || data.objectName === 'prototype') {
+    fail('Use a valid global object name of 1–64 letters, digits, or underscores, starting with a letter; prototype names are not allowed.');
+    return;
+  }
+  objectName = data.objectName;
+}
+const methodPath = objectName + '.emit';
+
 if (data.action === 'initialize') {
   const script = httpsUrl(data.scriptUrl);
   const endpoint = httpsUrl(data.endpoint);
@@ -237,8 +322,13 @@ if (data.action === 'initialize') {
     return;
   }
   injectScript(url, function() {
+    if (!queryPermission('access_globals', 'read', methodPath) ||
+        !queryPermission('access_globals', 'execute', methodPath)) {
+      fail('The global ' + methodPath + ' is not allowed by the template access_globals permission.');
+      return;
+    }
     if (getType(copyFromWindow(methodPath)) !== 'function') {
-      fail('SDK method Aggregate.emit was not found. Check the script and namespace.');
+      fail('SDK method ' + methodPath + ' was not found. Check the script and namespace.');
       return;
     }
     data.gtmOnSuccess();
@@ -281,13 +371,34 @@ for (let i = 0; i < rows.length; i++) {
   properties[row.name] = row.value;
   propertyNames.push(row.name);
 }
-if (getType(copyFromWindow(methodPath)) !== 'function') {
-  fail('Initialize the SDK before sending events. Expected Aggregate.emit.');
+
+let goal = undefined;
+if (data.goalEvent !== undefined) {
+  if (!validName(data.goalEvent, 64, '_.:-')) {
+    fail('Use a valid conversion goal code of 1–64 letters, digits, underscores, dots, colons, or hyphens, starting with a letter.');
+    return;
+  }
+  goal = data.goalEvent;
+}
+
+if (!queryPermission('access_globals', 'read', methodPath) ||
+    !queryPermission('access_globals', 'execute', methodPath)) {
+  fail('The global ' + methodPath + ' is not allowed by the template access_globals permission.');
   return;
 }
-const result = rows.length
-  ? callInWindow(methodPath, data.eventName, properties)
-  : callInWindow(methodPath, data.eventName);
+
+if (getType(copyFromWindow(methodPath)) !== 'function') {
+  fail('Initialize the SDK before sending events. Expected ' + methodPath + '.');
+  return;
+}
+
+const hasProperties = rows.length > 0;
+const result = (goal !== undefined)
+  ? callInWindow(methodPath, data.eventName, hasProperties ? properties : null, goal)
+  : (hasProperties
+      ? callInWindow(methodPath, data.eventName, properties)
+      : callInWindow(methodPath, data.eventName));
+
 if (result === false) {
   fail('The SDK rejected the event name. Use a fixed, non-identifying name.');
   return;
@@ -648,9 +759,100 @@ scenarios:
     assertApi('logToConsole').wasNotCalled();
     assertApi('gtmOnFailure').wasCalled();
     assertApi('gtmOnSuccess').wasNotCalled();
+- name: initializes the configured SDK with a custom global object name
+  code: |-
+    mock('queryPermission', function(perm, access, key) {
+      if (perm === 'access_globals') {
+        return key === 'CustomAnalytics.emit';
+      }
+      return true;
+    });
+    const expectedUrl = 'https://analytics.example.com/aggregate.js?endpoint=https%3A%2F%2Fcollector.example.com%2Fapi%2Freceive&token=public-token';
+    mock('injectScript', function(url, onSuccess, onFailure, cacheToken) {
+      assertThat(url).isEqualTo(expectedUrl);
+      onSuccess();
+    });
+    mock('copyFromWindow', function(path) {
+      assertThat(path).isEqualTo('CustomAnalytics.emit');
+      return function() {};
+    });
+    runCode({action: 'initialize', objectName: 'CustomAnalytics',
+      scriptUrl: 'https://analytics.example.com/aggregate.js',
+      endpoint: 'https://collector.example.com/api/receive', websiteToken: 'public-token'});
+    assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: emits an event with a custom global object name
+  code: |-
+    mock('queryPermission', function(perm, access, key) {
+      if (perm === 'access_globals') {
+        return key === 'CustomAnalytics.emit';
+      }
+      return true;
+    });
+    mock('copyFromWindow', function(path) {
+      assertThat(path).isEqualTo('CustomAnalytics.emit');
+      return function() {};
+    });
+    mock('callInWindow', function() { return true; });
+    runCode({action: 'event', objectName: 'CustomAnalytics', eventName: 'signup_click'});
+    assertApi('callInWindow').wasCalledWith('CustomAnalytics.emit', 'signup_click');
+    assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: fails cleanly when access globals permission is missing for custom object name
+  code: |-
+    mock('queryPermission', function(perm, access, key) {
+      if (perm === 'access_globals') {
+        return false;
+      }
+      return true;
+    });
+    runCode({action: 'event', objectName: 'UnpermittedAnalytics', eventName: 'signup_click'});
+    assertApi('copyFromWindow').wasNotCalled();
+    assertApi('callInWindow').wasNotCalled();
+    assertApi('gtmOnFailure').wasCalled();
+    assertApi('gtmOnSuccess').wasNotCalled();
+- name: rejects an invalid global object name
+  code: |-
+    const invalidNames = [42, '1invalid', 'two words', 'proto-dash', 'constructor', 'prototype'];
+    for (let i = 0; i < invalidNames.length; i++) {
+      runCode({action: 'event', objectName: invalidNames[i], eventName: 'signup_click'});
+      assertApi('copyFromWindow').wasNotCalled();
+      assertApi('callInWindow').wasNotCalled();
+      assertApi('gtmOnFailure').wasCalled();
+      assertApi('gtmOnSuccess').wasNotCalled();
+    }
+- name: emits an event with an optional conversion goal
+  code: |-
+    mock('copyFromWindow', function() { return function() {}; });
+    mock('callInWindow', function() { return true; });
+    runCode({action: 'event', eventName: 'signup_click', goalEvent: 'signup',
+      eventProperties: [{name: 'plan', value: 'pro'}]});
+    assertApi('callInWindow').wasCalledWith('Aggregate.emit', 'signup_click', {plan: 'pro'}, 'signup');
+    assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: emits an event with a conversion goal and empty properties
+  code: |-
+    mock('copyFromWindow', function() { return function() {}; });
+    mock('callInWindow', function() { return true; });
+    runCode({action: 'event', eventName: 'signup_click', goalEvent: 'signup'});
+    assertApi('callInWindow').wasCalledWith('Aggregate.emit', 'signup_click', null, 'signup');
+    assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: rejects an invalid conversion goal code
+  code: |-
+    const invalidGoals = [42, '1invalid', 'two words', 'signup/slash'];
+    for (let i = 0; i < invalidGoals.length; i++) {
+      runCode({action: 'event', eventName: 'signup_click', goalEvent: invalidGoals[i]});
+      assertApi('copyFromWindow').wasNotCalled();
+      assertApi('callInWindow').wasNotCalled();
+      assertApi('gtmOnFailure').wasCalled();
+      assertApi('gtmOnSuccess').wasNotCalled();
+    }
 
 
 ___NOTES___
 
-Uses the configured Aggregate SDK route and default Aggregate.emit namespace.
+Uses the configured Aggregate SDK route and configurable JavaScript object name
+(default: Aggregate.emit, or custom js_namespace matching your installation).
 Initialize once per page and sequence custom event tags after SDK loading.
+Supports optional conversion goal codes defined in config/goals.yaml.

@@ -101,7 +101,15 @@ function runScenario({ name, code }) {
         throw error;
       }
     },
-    queryPermission(permission) {
+    queryPermission(permission, ...args) {
+      if (permission === 'access_globals') {
+        const accessType = args[0];
+        const key = args[1];
+        const ag = permissions.find(p => p.instance.key.publicId === 'access_globals');
+        const keys = ag ? permissionValue(ag.instance.param.find(p => p.key === 'keys').value) : [];
+        const entry = keys.find(k => k.key === key);
+        return entry ? Boolean(entry[accessType]) : false;
+      }
       assert.ok(['inject_script', 'logging'].includes(permission), `Unknown permission: ${permission}`);
       // Scenarios must explicitly grant permissions instead of depending on
       // the installation hostname configured in the template editor.
@@ -198,7 +206,7 @@ test('editor defaults to initialization and enables fields for the selected acti
   assert.deepEqual(byName.action.selectItems.map(({ value }) => value), ['initialize', 'event']);
   for (const [action, names] of Object.entries({
     initialize: ['scriptUrl', 'endpoint', 'websiteToken'],
-    event: ['eventName', 'eventProperties'],
+    event: ['eventName', 'eventProperties', 'goalEvent'],
   })) {
     for (const name of names) {
       assert.deepEqual(byName[name].enablingConditions, [
@@ -207,6 +215,8 @@ test('editor defaults to initialization and enables fields for the selected acti
     }
   }
   assert.equal(byName.action.enablingConditions, undefined);
+  assert.equal(byName.objectName.enablingConditions, undefined);
+  assert.equal(byName.objectName.defaultValue, 'Aggregate');
   assert.equal(byName.log.enablingConditions, undefined);
 });
 
@@ -275,6 +285,22 @@ test('editor validators accept supported script URLs and event names', () => {
   }
   for (const value of ['', 'Signup Completed', '1signup', 'signup/path', 'a'.repeat(101)]) {
     assert.ok(!eventName.test(value), `Unsupported event name accepted: ${value}`);
+  }
+
+  const objectName = patternFor('objectName');
+  for (const value of ['Aggregate', 'CompanyAnalytics', 'my_tracker', 'Tracker123']) {
+    assert.ok(objectName.test(value), `Supported object name rejected: ${value}`);
+  }
+  for (const value of ['', '_private', '1tracker', 'two words', 'tracker-dash', 'tracker/slash']) {
+    assert.ok(!objectName.test(value), `Unsupported object name accepted: ${value}`);
+  }
+
+  const goalEvent = patternFor('goalEvent');
+  for (const value of ['signup', 'purchase_completed', 'checkout.step-1:done']) {
+    assert.ok(goalEvent.test(value), `Supported goal code rejected: ${value}`);
+  }
+  for (const value of ['', '1signup', 'two words', 'signup/slash']) {
+    assert.ok(!goalEvent.test(value), `Unsupported goal code accepted: ${value}`);
   }
 });
 
