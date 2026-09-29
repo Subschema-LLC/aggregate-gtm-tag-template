@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-\${{ inputs.tag || github.ref }}
+  group: release-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -23,11 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      RELEASE_TAG: \${{ inputs.tag || github.ref_name }}
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ inputs.tag || github.ref_name }}
+          ref: ${{ inputs.tag || github.ref_name }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -57,7 +57,7 @@ jobs:
         run: node --test tests/*.test.mjs
       - name: Create GitHub Release
         env:
-          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           gh release create "$RELEASE_TAG" \
