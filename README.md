@@ -66,13 +66,57 @@ node --test tests/template.test.mjs
 
 These tests use mocked GTM APIs. GTM's **Tests** tab and **Preview** remain necessary to verify the actual sandbox, permissions, deployment, and ingestion.
 
-## Repository and releases
+## Release versioning and tagging
 
-- [template.tpl](template.tpl): template fields, sandboxed code, permissions, and GTM tests.
-- [tests/template.test.mjs](tests/template.test.mjs): local regression tests.
+This project uses a calendar-based versioning scheme for releases and Git tags:
+
+```
+v[YEAR].[MN].[INDEX]
+```
+
+- **`[YEAR]`**: 4-digit calendar year (e.g. `2026`).
+- **`[MN]`**: 2-digit zero-padded calendar month (`01`–`12`, e.g. `09` for September).
+- **`[INDEX]`**: 2-digit zero-padded release counter for that specific month (`01`, `02`, `03`…), **not** the day of the month.
+
+### Examples
+
+| Release Tag | Meaning |
+| :--- | :--- |
+| `v2026.09.01` | First release in September 2026 |
+| `v2026.09.02` | Second release in September 2026 |
+| `v2026.10.01` | First release in October 2026 |
+
+### Repository structure and release files
+
+- [template.tpl](template.tpl): GTM template fields, sandboxed code, permissions, and GTM tests.
+- [tests/template.test.mjs](tests/template.test.mjs): Local regression test suite.
 - [metadata.yaml](metadata.yaml): Community Template Gallery release history.
+- [scripts/release.mjs](scripts/release.mjs): Release helper script to calculate the next monthly release tag.
 
-Before publishing to the Community Template Gallery, commit the tested template, then add a `versions` entry in `metadata.yaml` with that commit SHA and release notes. The SHA must identify the version intended for publication. Keep the newest entry first and preserve release history.
+### Release Workflow
+
+1. **Verify**: Ensure local regression tests pass:
+   ```sh
+   node --test tests/*.test.mjs
+   ```
+2. **Commit Template Changes**: Finalize changes to `template.tpl` and other template assets.
+3. **Check Next Version**:
+   ```sh
+   node scripts/release.mjs --next
+   ```
+4. **Update `metadata.yaml`**: Prepend a new entry with the template commit SHA and change notes prefixed with the release tag:
+   ```yaml
+   versions:
+     - sha: <TEMPLATE_COMMIT_SHA>
+       changeNotes: "v2026.09.01: Production release notes..."
+   ```
+5. **Tag & Publish**:
+   Create and push the signed or annotated tag:
+   ```sh
+   git tag -a v2026.09.01 -m "Release v2026.09.01"
+   git push origin v2026.09.01
+   ```
+   Pushing the tag triggers the automated [Release Workflow](.github/workflows/release.yml) to run tests, bundle release artifacts (`template.tpl`, `metadata.yaml`, `LICENSE`), and publish the GitHub Release.
 
 
 ## Security
