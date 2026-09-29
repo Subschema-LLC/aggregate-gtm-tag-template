@@ -1,5 +1,7 @@
 homepage: "https://github.com/Subschema-LLC/aggregate"
 documentation: "https://github.com/Subschema-LLC/aggregate-gtm-tag-template#readme"
 versions:
+  - sha: 0ff1d149d63b7d3a62888f6a7a2b419d6bd87ceb
+    changeNotes: Production release of Aggregate GTM tag template with SDK initialization, event tagging, brand icon, and Apache 2.0 license.
   - sha: 6e39dcbe14049f701d25e7147b94e6ffe33fd42b
     changeNotes: Initial Aggregate GTM tag template release.
