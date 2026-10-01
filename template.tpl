@@ -146,9 +146,23 @@ ___TEMPLATE_PARAMETERS___
     ]
   },
   {
+    "type": "TEXT",
+    "name": "customData",
+    "displayName": "Custom data object",
+    "simpleValueType": true,
+    "help": "Optional GTM variable that returns an object of custom properties, for example a Data Layer Variable named customData. Its properties are sent together with the custom data properties below, and a row with the same name replaces the object's value. The object must be flat: string, finite number, boolean, or null values; undefined values are skipped.",
+    "enablingConditions": [
+      {
+        "paramName": "action",
+        "paramValue": "event",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
     "type": "SIMPLE_TABLE",
     "name": "eventProperties",
-    "displayName": "Event properties",
+    "displayName": "Custom data properties",
     "enablingConditions": [
       {
         "paramName": "action",
@@ -183,7 +197,7 @@ ___TEMPLATE_PARAMETERS___
       }
     ],
     "newRowButtonText": "Add property",
-    "help": "Up to 50 unique scalar properties for Aggregate.emit(). Use typed GTM variables for numbers, booleans, or null. The SDK and server apply consent and collection rules."
+    "help": "Up to 50 unique scalar properties in total with the custom data object, sent in the event's customData. Use typed GTM variables for numbers, booleans, or null. The SDK and server apply consent and collection rules."
   },
   {
     "type": "TEXT",
@@ -246,6 +260,7 @@ const parseUrl = require('parseUrl');
 const encodeUriComponent = require('encodeUriComponent');
 const queryPermission = require('queryPermission');
 const log = require('logToConsole');
+const Object = require('Object');
 
 const fail = function(message) {
   if (data.log && queryPermission('logging')) {
@@ -347,29 +362,72 @@ if (!validName(data.eventName, 100, '_.:-')) {
   return;
 }
 
-const rows = data.eventProperties === undefined ? [] : data.eventProperties;
-if (getType(rows) !== 'array' || rows.length > 50) {
-  fail('Event properties must be a table with at most 50 rows.');
-  return;
-}
+const validPropertyName = function(name) {
+  return validName(name, 64, '_.-') && name !== 'constructor' && name !== 'prototype';
+};
+const scalar = function(value) {
+  const type = getType(value);
+  return type === 'string' || type === 'boolean' || type === 'null' ||
+    (type === 'number' && value - value === 0);
+};
+
+// The custom data object and the property rows fill the event's customData.
+// An absent, null, or empty variable means no object, and an undefined value
+// means an absent property, as it would in JSON.
 const properties = {};
 const propertyNames = [];
+const customData = data.customData;
+if (customData !== undefined && customData !== null && customData !== '') {
+  if (getType(customData) !== 'object') {
+    fail('The custom data object must be a GTM variable that returns an object.');
+    return;
+  }
+  const keys = Object.keys(customData);
+  for (let i = 0; i < keys.length; i++) {
+    const value = customData[keys[i]];
+    if (value === undefined) continue;
+    if (!validPropertyName(keys[i])) {
+      fail('Custom data object property names must start with a letter; prototype names are not allowed.');
+      return;
+    }
+    if (!scalar(value)) {
+      fail('Custom data object values must be strings, finite numbers, booleans, or null; nested objects and arrays are not sent.');
+      return;
+    }
+    properties[keys[i]] = value;
+    propertyNames.push(keys[i]);
+    if (propertyNames.length > 50) {
+      fail('Send at most 50 custom data properties.');
+      return;
+    }
+  }
+}
+
+const rows = data.eventProperties === undefined ? [] : data.eventProperties;
+if (getType(rows) !== 'array' || rows.length > 50) {
+  fail('Custom data properties must be a table with at most 50 rows.');
+  return;
+}
+const rowNames = [];
 for (let i = 0; i < rows.length; i++) {
   const row = rows[i];
-  if (getType(row) !== 'object' || !validName(row.name, 64, '_.-') ||
-      row.name === 'constructor' || row.name === 'prototype' ||
-      propertyNames.indexOf(row.name) !== -1) {
+  if (getType(row) !== 'object' || !validPropertyName(row.name) ||
+      rowNames.indexOf(row.name) !== -1) {
     fail('Use unique property names starting with a letter; prototype names are not allowed.');
     return;
   }
-  const type = getType(row.value);
-  if (type !== 'string' && type !== 'boolean' && type !== 'null' &&
-      !(type === 'number' && row.value - row.value === 0)) {
+  if (!scalar(row.value)) {
     fail('Property values must be strings, finite numbers, booleans, or null.');
     return;
   }
+  // A row replaces the object's value for the same name.
+  if (propertyNames.indexOf(row.name) === -1) propertyNames.push(row.name);
   properties[row.name] = row.value;
-  propertyNames.push(row.name);
+  rowNames.push(row.name);
+}
+if (propertyNames.length > 50) {
+  fail('Send at most 50 custom data properties in total from the object and the table.');
+  return;
 }
 
 let goal = undefined;
@@ -392,7 +450,7 @@ if (getType(copyFromWindow(methodPath)) !== 'function') {
   return;
 }
 
-const hasProperties = rows.length > 0;
+const hasProperties = propertyNames.length > 0;
 const result = (goal !== undefined)
   ? callInWindow(methodPath, data.eventName, hasProperties ? properties : null, goal)
   : (hasProperties
@@ -729,6 +787,97 @@ scenarios:
     assertApi('callInWindow').wasNotCalled();
     assertApi('gtmOnFailure').wasCalled();
     assertApi('gtmOnSuccess').wasNotCalled();
+- name: emits a custom data object together with property rows
+  code: |-
+    mock('copyFromWindow', function() { return function() {}; });
+    mock('callInWindow', function() { return true; });
+    runCode({action: 'event', eventName: 'purchase_completed',
+      customData: {plan: 'basic', amount: 49.5, trial: false, coupon: null, 'context.source': 'checkout',
+        referrer_code: undefined},
+      eventProperties: [{name: 'plan', value: 'pro'}, {name: 'channel', value: 'gtm'}]});
+    assertApi('callInWindow').wasCalledWith('Aggregate.emit', 'purchase_completed', {
+      plan: 'pro', amount: 49.5, trial: false, coupon: null, 'context.source': 'checkout', channel: 'gtm'
+    });
+    assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: emits a custom data object alone and with a conversion goal
+  code: |-
+    mock('copyFromWindow', function() { return function() {}; });
+    mock('callInWindow', function() { return true; });
+    runCode({action: 'event', eventName: 'purchase_completed', customData: {plan: 'pro', amount: 0}});
+    assertApi('callInWindow').wasCalledWith('Aggregate.emit', 'purchase_completed', {plan: 'pro', amount: 0});
+    runCode({action: 'event', eventName: 'purchase_completed', customData: {plan: 'pro'},
+      eventProperties: [], goalEvent: 'purchase'});
+    assertApi('callInWindow').wasCalledWith('Aggregate.emit', 'purchase_completed', {plan: 'pro'}, 'purchase');
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: treats an absent null empty or valueless custom data object as no properties
+  code: |-
+    mock('copyFromWindow', function() { return function() {}; });
+    mock('callInWindow', function(path, eventName, properties) {
+      assertThat(properties).isEqualTo(undefined);
+      return true;
+    });
+    const emptyObjects = [undefined, null, '', {}, {coupon: undefined}];
+    for (let i = 0; i < emptyObjects.length; i++) {
+      runCode({action: 'event', eventName: 'signup_click', customData: emptyObjects[i]});
+    }
+    assertApi('callInWindow').wasCalledWith('Aggregate.emit', 'signup_click');
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: rejects a custom data value that is not an object
+  code: |-
+    mock('copyFromWindow', function() { return function() {}; });
+    mock('callInWindow', function() { return true; });
+    const invalidObjects = ['plan=pro', '{{customData}}', 42, true, [], [{plan: 'pro'}], function() {}];
+    for (let i = 0; i < invalidObjects.length; i++) {
+      runCode({action: 'event', eventName: 'signup_click', customData: invalidObjects[i]});
+      assertApi('copyFromWindow').wasNotCalled();
+      assertApi('callInWindow').wasNotCalled();
+      assertApi('gtmOnFailure').wasCalled();
+      assertApi('gtmOnSuccess').wasNotCalled();
+    }
+- name: rejects invalid custom data object keys and nested or nonfinite values
+  code: |-
+    mock('copyFromWindow', function() { return function() {}; });
+    mock('callInWindow', function() { return true; });
+    const invalidObjects = [{'two words': 'pro'}, {'1plan': 'pro'}, {_plan: 'pro'}, {'': 'pro'},
+      {constructor: 'pro'}, {prototype: 'pro'},
+      {abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm: 'pro'},
+      {plan: {tier: 'pro'}}, {plan: ['pro']}, {plan: function() {}}, {plan: 0 / 0}, {plan: 1 / 0}];
+    for (let i = 0; i < invalidObjects.length; i++) {
+      runCode({action: 'event', eventName: 'signup_click', customData: invalidObjects[i]});
+      assertApi('copyFromWindow').wasNotCalled();
+      assertApi('callInWindow').wasNotCalled();
+      assertApi('gtmOnFailure').wasCalled();
+      assertApi('gtmOnSuccess').wasNotCalled();
+    }
+- name: accepts 50 combined custom data properties when rows replace object values
+  code: |-
+    mock('copyFromWindow', function() { return function() {}; });
+    mock('callInWindow', function() { return true; });
+    const object = {};
+    for (let i = 0; i < 40; i++) object['property' + i] = i;
+    const rows = [];
+    for (let i = 30; i < 50; i++) rows.push({name: 'property' + i, value: 'row'});
+    runCode({action: 'event', eventName: 'signup_click', customData: object, eventProperties: rows});
+    assertApi('callInWindow').wasCalled();
+    assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: rejects more than 50 combined custom data properties
+  code: |-
+    mock('copyFromWindow', function() { return function() {}; });
+    mock('callInWindow', function() { return true; });
+    const largeObject = {};
+    for (let i = 0; i < 51; i++) largeObject['property' + i] = i;
+    runCode({action: 'event', eventName: 'signup_click', customData: largeObject});
+    const object = {};
+    for (let i = 0; i < 30; i++) object['object' + i] = i;
+    const rows = [];
+    for (let i = 0; i < 21; i++) rows.push({name: 'row' + i, value: i});
+    runCode({action: 'event', eventName: 'signup_click', customData: object, eventProperties: rows});
+    assertApi('copyFromWindow').wasNotCalled();
+    assertApi('callInWindow').wasNotCalled();
+    assertApi('gtmOnFailure').wasCalled();
+    assertApi('gtmOnSuccess').wasNotCalled();
 - name: rejects an unknown action
   code: |-
     runCode({action: 'other'});
@@ -856,3 +1005,5 @@ Uses the configured Aggregate SDK route and configurable JavaScript object name
 (default: Aggregate.emit, or custom js_namespace matching your installation).
 Initialize once per page and sequence custom event tags after SDK loading.
 Supports optional conversion goal codes defined in config/goals.yaml.
+Custom data can come from an object variable (such as a Data Layer Variable
+named customData), a table of properties, or both; table rows win on conflicts.

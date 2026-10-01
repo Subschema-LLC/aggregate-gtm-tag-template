@@ -33,16 +33,46 @@ GTM caches script injection by the complete configured URL, so repeated initiali
 
 ## Send events
 
-Create another **Aggregate** tag with **Tag action** set to **Send event**. Set a fixed event name, such as `signup_click`, add any event properties, and choose the event's trigger.
+Create another **Aggregate** tag with **Tag action** set to **Send event**. Set a fixed event name, such as `signup_click`, add any custom data, and choose the event's trigger.
 
 Under **Advanced Settings → Tag Sequencing**, select the initialization tag as the setup tag and enable **Don't fire this tag if the setup tag fails or is paused**. This makes the event wait for SDK loading; an early initialization trigger alone does not guarantee an asynchronous script has finished. The initialization cache allows the same setup tag to be reused.
 
-The event action calls `window[objectName].emit(eventName, properties, goalEvent)`, omitting optional arguments when none are configured. It requires the SDK to be initialized and fails if the method is missing or returns `false`.
+The event action calls `window[objectName].emit(eventName, properties, goalEvent)`, omitting optional arguments when none are configured. It requires the SDK to be initialized and fails if the method is missing or returns `false`. The SDK sends `properties` to the collector as the event's `customData` object (earlier SDK versions name it `eventData`).
+
+### Custom data
+
+An event's custom data can come from two places, and you can use either or both:
+
+- **Custom data object**: a GTM variable that returns an object, such as a Data Layer Variable named `customData`.
+- **Custom data properties**: a table of individual names and values, typed or taken from GTM variables.
+
+The template combines them into one flat object. When a table row and the object use the same name, the row's value is sent. For example, with this data layer push:
+
+```js
+dataLayer.push({
+  event: 'purchase_completed',
+  customData: { plan: 'basic', amount: 49.5, trial: false }
+});
+```
+
+a **Custom data object** of `{{DLV - customData}}` and a table row `plan` = `pro` send:
+
+```json
+{ "plan": "pro", "amount": 49.5, "trial": false }
+```
+
+The same rules apply to both sources:
+
+- At most 50 unique property names in total, matching `[A-Za-z][A-Za-z0-9_.-]{0,63}`. Reserved prototype names are rejected; dots are literal characters, not nesting.
+- Values must be strings, finite numbers, booleans, or `null`. The object must be flat: a nested object or array fails the tag rather than being flattened or partly sent. An object value that is `undefined` is skipped, as it would be in JSON.
+- A blank, `undefined`, or `null` object setting sends no object properties. Any other value that is not an object, such as text, fails the tag.
+- Use GTM variables to preserve numeric and boolean types in the table; text such as `"42"` remains a string.
+
+GTM's data layer merges objects pushed under the same key, so properties from an earlier `customData` push can remain in the Data Layer Variable for later events. Push `customData: null` before an event's new object, or include every property in each push, when earlier values must not carry over.
+
+### Event names and goals
 
 - Event names must match `[A-Za-z][A-Za-z0-9_.:-]{0,99}`: at most 100 characters, with no spaces. Use an approved taxonomy rather than names assembled from user input.
-- Properties are optional, with at most 50 unique keys matching `[A-Za-z][A-Za-z0-9_.-]{0,63}`. Reserved prototype names are rejected; dots are literal characters.
-- Values must be strings, finite numbers, booleans, or `null`. Nested objects and arrays are unsupported. Use GTM variables to preserve numeric and boolean types; text such as `"42"` remains a string.
-
 - Optional conversion goal codes must match `[A-Za-z][A-Za-z0-9_.:-]{0,63}`, corresponding to an enabled goal in your installation's `config/goals.yaml` (for example `signup` or `purchase`). It is passed as the third argument to the emit method.
 
 The SDK and server apply the data model's consent, type, and collection filters. A property or goal accepted by the template can still be omitted by those filters. See the [SDK tracking guide](https://github.com/Subschema-LLC/aggregate/blob/master/docs/TRACKING.md) for property limits and goal configuration.
