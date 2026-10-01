@@ -71,10 +71,11 @@ Treat these as constraints on implementation and documentation:
 - **Event taxonomy enforcement.** Event names must match `[A-Za-z][A-Za-z0-9_.:-]{0,99}`
   (at most 100 characters, starting with a letter, no spaces). Use an approved, fixed
   taxonomy rather than assembling names from arbitrary user input.
-- **Scalar properties only.** Event properties are limited to at most 50 unique scalar
-  keys matching `[A-Za-z][A-Za-z0-9_.-]{0,63}`. Values must be strings, finite numbers,
-  booleans, or `null`. Reserved prototype names (`constructor`, `prototype`, `__proto__`)
-  are rejected.
+- **Scalar properties only.** Custom data, from the object variable and the property
+  table combined, is limited to at most 50 unique scalar keys matching
+  `[A-Za-z][A-Za-z0-9_.-]{0,63}`. Values must be strings, finite numbers, booleans, or
+  `null`; nested objects and arrays are rejected, not flattened. Reserved prototype names
+  (`constructor`, `prototype`, `__proto__`) are rejected.
 - **Enhanced collection needs explicit consent.** The template leaves Aggregate's consent
   state to the site's consent management platform (CMP) and SDK configuration. Tags must
   never synthesize consent or bypass Aggregate's consent API.
