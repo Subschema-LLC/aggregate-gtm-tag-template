@@ -71,6 +71,7 @@ The same rules apply to both sources:
 GTM's data layer merges objects pushed under the same key, so properties from an earlier `customData` push can remain in the Data Layer Variable for later events. Push `customData: null` before an event's new object, or include every property in each push, when earlier values must not carry over.
 
 ### Event names and goals
+The event action calls `window[objectName].emit(eventName, properties, goalEvent)`, omitting optional arguments when none are configured. It requires the SDK to be initialized and fails if the method is missing or returns `false`.
 
 - Event names must match `[A-Za-z][A-Za-z0-9_.:-]{0,99}`: at most 100 characters, with no spaces. Use an approved taxonomy rather than names assembled from user input.
 - Optional conversion goal codes must match `[A-Za-z][A-Za-z0-9_.:-]{0,63}`, corresponding to an enabled goal in your installation's `config/goals.yaml` (for example `signup` or `purchase`). It is passed as the third argument to the emit method.
@@ -104,6 +105,23 @@ These tests use mocked GTM APIs. GTM's **Tests** tab and **Preview** remain nece
 ## Release versioning and tagging
 
 This project uses a calendar-based versioning scheme for releases and Git tags:
+
+```
+v[YEAR].[MN].[INDEX]
+```
+
+- **`[YEAR]`**: 4-digit calendar year (e.g. `2026`).
+- **`[MN]`**: 2-digit zero-padded calendar month (`01`–`12`, e.g. `09` for September).
+- **`[INDEX]`**: 2-digit zero-padded release counter for that specific month (`01`, `02`, `03`…), **not** the day of the month.
+
+### Examples
+
+| Release Tag | Meaning |
+| :--- | :--- |
+| `v2026.09.01` | First release in September 2026 |
+| `v2026.09.02` | Second release in September 2026 |
+| `v2026.10.01` | First release in October 2026 |
+
 
 ```
 v[YEAR].[MN].[INDEX]
