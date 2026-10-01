@@ -241,47 +241,6 @@ ___TEMPLATE_PARAMETERS___
     ]
   },
   {
-    "type": "TEXT",
-    "name": "goalEvent",
-    "displayName": "Conversion goal code",
-    "simpleValueType": true,
-    "help": "Optional conversion goal code matching an enabled goal in config/goals.yaml (for example signup or purchase). Forwarded to the SDK emit method as the goal argument.",
-    "enablingConditions": [
-      {
-        "paramName": "action",
-        "paramValue": "event",
-        "type": "EQUALS"
-      }
-    ],
-    "valueValidators": [
-      {
-        "type": "REGEX",
-        "args": [
-          "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$"
-        ]
-      }
-    ]
-  },
-  {
-    "type": "TEXT",
-    "name": "objectName",
-    "displayName": "Tracker global object name",
-    "simpleValueType": true,
-    "defaultValue": "Aggregate",
-    "help": "JavaScript global window object name for the SDK (js_namespace in aggregate.yaml, default: Aggregate). If customized, also update template Permissions > Accesses global variables to allow read and execute on <objectName>.emit.",
-    "valueValidators": [
-      {
-        "type": "NON_EMPTY"
-      },
-      {
-        "type": "REGEX",
-        "args": [
-          "^[A-Za-z][A-Za-z0-9_]{0,63}$"
-        ]
-      }
-    ]
-  },
-  {
     "type": "CHECKBOX",
     "name": "log",
     "checkboxText": "Log failures to the console",
