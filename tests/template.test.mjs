@@ -119,6 +119,8 @@ function runScenario({ name, code }) {
     copyFromWindow: () => undefined,
     callInWindow: () => undefined,
     logToConsole: () => undefined,
+    // GTM exposes Object as a namespace of functions rather than a function.
+    Object: { keys: value => Object.keys(value) },
   };
 
   function record(apiName, args) {
@@ -143,6 +145,15 @@ function runScenario({ name, code }) {
         },
         require(apiName) {
           const implementation = mocks.get(apiName) ?? defaults[apiName];
+          if (implementation !== null && typeof implementation === 'object') {
+            return Object.fromEntries(Object.entries(implementation).map(([name, method]) => {
+              assert.equal(typeof method, 'function', `Unsupported GTM API: ${apiName}.${name}`);
+              return [name, (...args) => {
+                record(`${apiName}.${name}`, args);
+                return method(...args);
+              }];
+            }));
+          }
           assert.equal(typeof implementation, 'function', `Unsupported GTM API: ${apiName}`);
           return (...args) => {
             record(apiName, args);
@@ -206,7 +217,7 @@ test('editor defaults to initialization and enables fields for the selected acti
   assert.deepEqual(byName.action.selectItems.map(({ value }) => value), ['initialize', 'event']);
   for (const [action, names] of Object.entries({
     initialize: ['scriptUrl', 'endpoint', 'websiteToken'],
-    event: ['eventName', 'eventProperties', 'goalEvent'],
+    event: ['eventName', 'customData', 'eventProperties', 'goalEvent'],
   })) {
     for (const name of names) {
       assert.deepEqual(byName[name].enablingConditions, [
