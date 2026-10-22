@@ -18,14 +18,14 @@ Use your installation's configured `/aggregate.js` route, which includes the sav
 
    | Field | Example | Purpose |
    | --- | --- | --- |
-   | Aggregate script URL | `https://analytics.example.com/aggregate.js` | Configured SDK route; `/aggregate.js?min=1` and deployment path prefixes are supported. |
+   | Aggregate script URL | `https://analytics.example.com/aggregate.js?min=1` | Configured SDK route. `?min=1` serves the minified SDK, about half the download of plain `/aggregate.js`. Deployment path prefixes are supported. |
    | Collector endpoint | `https://analytics.example.com/api/receive` | HTTPS ingestion URL for your installation. |
    | Public website token | Your registered website's token | Identifies the website receiving events. |
    | Tracker global object name | `Aggregate` | Optional global window object name (default: `Aggregate`). Set to match `js_namespace` if customized. |
 
 4. Fire this tag early, for example with **Initialization – All Pages**. Use one initialization tag and one endpoint/token configuration per page.
 
-The template adds URL-encoded `endpoint` and `token` query parameters to the script URL. Enter the base SDK URL, optionally with `?min=1`; do not add configuration parameters yourself. The public token is visible in the script request URL.
+The template adds URL-encoded `endpoint` and `token` query parameters to the script URL. Enter the base SDK URL with `?min=1`, or without it to load the readable SDK while debugging; do not add configuration parameters yourself. The public token is visible in the script request URL.
 
 The SDK automatically sends the initial page view, waiting for `DOMContentLoaded` when necessary. Use this initialization tag as the only SDK loader and configure the endpoint and token through its fields. No additional initial page-view tag is needed. Inline `Aggregate.endpoint` or `Aggregate.websiteToken` settings take precedence over the template's URL configuration.
 

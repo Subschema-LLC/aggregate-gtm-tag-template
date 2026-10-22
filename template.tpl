@@ -55,7 +55,8 @@ ___TEMPLATE_PARAMETERS___
     "name": "scriptUrl",
     "displayName": "Aggregate script URL",
     "simpleValueType": true,
-    "help": "Your installation's HTTPS /aggregate.js URL, optionally with ?min=1. Set your host under template Permissions > Injects scripts before saving.",
+    "help": "Your installation's HTTPS /aggregate.js URL. Add ?min=1 for the minified SDK, about half the download. Set your host under template Permissions > Injects scripts before saving.",
+    "valueHint": "https://analytics.example.com/aggregate.js?min=1",
     "enablingConditions": [
       {
         "paramName": "action",
