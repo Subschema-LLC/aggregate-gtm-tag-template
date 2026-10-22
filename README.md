@@ -21,13 +21,15 @@ Use your installation's configured `/aggregate.js` route, which includes the sav
    | Aggregate script URL | `https://analytics.example.com/aggregate.js?min=1` | Configured SDK route. `?min=1` serves the minified SDK, about half the download of plain `/aggregate.js`. Deployment path prefixes are supported. |
    | Collector endpoint | `https://analytics.example.com/api/receive` | HTTPS ingestion URL for your installation. |
    | Public website token | Your registered website's token | Identifies the website receiving events. |
+   | Custom data object | `{{DLV - customData}}` | Optional object variable with custom properties sent in the automatic page view. |
+   | Custom data properties | Table of properties | Optional table of custom properties sent in the automatic page view. |
    | Tracker global object name | `Aggregate` | Optional global window object name (default: `Aggregate`). Set to match `js_namespace` if customized. |
 
 4. Fire this tag early, for example with **Initialization – All Pages**. Use one initialization tag and one endpoint/token configuration per page.
 
-The template adds URL-encoded `endpoint` and `token` query parameters to the script URL. Enter the base SDK URL with `?min=1`, or without it to load the readable SDK while debugging; do not add configuration parameters yourself. The public token is visible in the script request URL.
+The template adds URL-encoded `endpoint` and `token` query parameters to the script URL. When custom data is configured, each property is forwarded as a URL-encoded `cd.<property>=<value>` parameter on the script URL. Enter the base SDK URL with `?min=1`, or without it to load the readable SDK while debugging; do not add configuration parameters to the script URL or collector endpoint yourself. The public token is visible in the script request URL.
 
-The SDK automatically sends the initial page view, waiting for `DOMContentLoaded` when necessary. Use this initialization tag as the only SDK loader and configure the endpoint and token through its fields. No additional initial page-view tag is needed. Inline `Aggregate.endpoint` or `Aggregate.websiteToken` settings take precedence over the template's URL configuration.
+The SDK automatically sends the initial page view, waiting for `DOMContentLoaded` when necessary, and populates its custom data from the `cd.*` script parameters. Use this initialization tag as the only SDK loader and configure the endpoint, token, and page-view custom data through its fields. No additional initial page-view tag is needed. Inline `Aggregate.endpoint` or `Aggregate.websiteToken` settings take precedence over the template's URL configuration.
 
 GTM caches script injection by the complete configured URL, so repeated initialization with the same settings shares one load. Changing the URL, endpoint, or token creates a different load; keep the configuration stable throughout the page.
 
@@ -41,7 +43,9 @@ The event action calls `window[objectName].emit(eventName, properties, goalEvent
 
 ### Custom data
 
-An event's custom data can come from two places, and you can use either or both:
+Custom data can be configured on both **Initialize SDK (automatic page view)** and **Send event** tags. For initialization tags, properties are forwarded as `cd.<property>=<value>` parameters on the script URL and attached to the automatic initial page view. For event tags, properties are passed to `window[objectName].emit()`.
+
+Custom data can come from two places, and you can use either or both:
 
 - **Custom data object**: a GTM variable that returns an object, such as a Data Layer Variable named `customData`.
 - **Custom data properties**: a table of individual names and values, typed or taken from GTM variables.
