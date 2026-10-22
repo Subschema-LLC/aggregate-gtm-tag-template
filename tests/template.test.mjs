@@ -217,7 +217,7 @@ test('editor defaults to initialization and enables fields for the selected acti
   assert.deepEqual(byName.action.selectItems.map(({ value }) => value), ['initialize', 'event']);
   for (const [action, names] of Object.entries({
     initialize: ['scriptUrl', 'endpoint', 'websiteToken'],
-    event: ['eventName', 'customData', 'eventProperties', 'goalEvent'],
+    event: ['eventName', 'goalEvent'],
   })) {
     for (const name of names) {
       assert.deepEqual(byName[name].enablingConditions, [
@@ -226,6 +226,8 @@ test('editor defaults to initialization and enables fields for the selected acti
     }
   }
   assert.equal(byName.action.enablingConditions, undefined);
+  assert.equal(byName.customData.enablingConditions, undefined);
+  assert.equal(byName.eventProperties.enablingConditions, undefined);
   assert.equal(byName.objectName.enablingConditions, undefined);
   assert.equal(byName.objectName.defaultValue, 'Aggregate');
   assert.equal(byName.log.enablingConditions, undefined);

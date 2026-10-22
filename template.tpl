@@ -151,26 +151,12 @@ ___TEMPLATE_PARAMETERS___
     "name": "customData",
     "displayName": "Custom data object",
     "simpleValueType": true,
-    "help": "Optional GTM variable that returns an object of custom properties, for example a Data Layer Variable named customData. Its properties are sent together with the custom data properties below, and a row with the same name replaces the object's value. The object must be flat: string, finite number, boolean, or null values; undefined values are skipped.",
-    "enablingConditions": [
-      {
-        "paramName": "action",
-        "paramValue": "event",
-        "type": "EQUALS"
-      }
-    ]
+    "help": "Optional GTM variable that returns an object of custom properties, for example a Data Layer Variable named customData. Its properties are sent together with the custom data properties below, and a row with the same name replaces the object's value. The object must be flat: string, finite number, boolean, or null values; undefined values are skipped. For the initialization action, properties are forwarded to the automatic page view via script URL parameters; for events, they are sent via emit()."
   },
   {
     "type": "SIMPLE_TABLE",
     "name": "eventProperties",
     "displayName": "Custom data properties",
-    "enablingConditions": [
-      {
-        "paramName": "action",
-        "paramValue": "event",
-        "type": "EQUALS"
-      }
-    ],
     "simpleTableColumns": [
       {
         "name": "name",
@@ -198,7 +184,7 @@ ___TEMPLATE_PARAMETERS___
       }
     ],
     "newRowButtonText": "Add property",
-    "help": "Up to 50 unique scalar properties in total with the custom data object, sent in the event's customData. Use typed GTM variables for numbers, booleans, or null. The SDK and server apply consent and collection rules."
+    "help": "Up to 50 unique scalar properties in total with the custom data object, sent in the automatic page view (via script URL parameters) or event customData. Use typed GTM variables for numbers, booleans, or null. The SDK and server apply consent and collection rules."
   },
   {
     "type": "TEXT",
@@ -310,6 +296,77 @@ if (data.objectName !== undefined) {
 }
 const methodPath = objectName + '.emit';
 
+const validPropertyName = function(name) {
+  return validName(name, 64, '_.-') && name !== 'constructor' && name !== 'prototype';
+};
+const scalar = function(value) {
+  const type = getType(value);
+  return type === 'string' || type === 'boolean' || type === 'null' ||
+    (type === 'number' && value - value === 0);
+};
+
+// The custom data object and the property rows fill the custom data.
+// An absent, null, or empty variable means no object, and an undefined value
+// means an absent property, as it would in JSON.
+const getProperties = function() {
+  const properties = {};
+  const propertyNames = [];
+  const customData = data.customData;
+  if (customData !== undefined && customData !== null && customData !== '') {
+    if (getType(customData) !== 'object') {
+      fail('The custom data object must be a GTM variable that returns an object.');
+      return undefined;
+    }
+    const keys = Object.keys(customData);
+    for (let i = 0; i < keys.length; i++) {
+      const value = customData[keys[i]];
+      if (value === undefined) continue;
+      if (!validPropertyName(keys[i])) {
+        fail('Custom data object property names must start with a letter; prototype names are not allowed.');
+        return undefined;
+      }
+      if (!scalar(value)) {
+        fail('Custom data object values must be strings, finite numbers, booleans, or null; nested objects and arrays are not sent.');
+        return undefined;
+      }
+      properties[keys[i]] = value;
+      propertyNames.push(keys[i]);
+      if (propertyNames.length > 50) {
+        fail('Send at most 50 custom data properties.');
+        return undefined;
+      }
+    }
+  }
+
+  const rows = data.eventProperties === undefined ? [] : data.eventProperties;
+  if (getType(rows) !== 'array' || rows.length > 50) {
+    fail('Custom data properties must be a table with at most 50 rows.');
+    return undefined;
+  }
+  const rowNames = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (getType(row) !== 'object' || !validPropertyName(row.name) ||
+        rowNames.indexOf(row.name) !== -1) {
+      fail('Use unique property names starting with a letter; prototype names are not allowed.');
+      return undefined;
+    }
+    if (!scalar(row.value)) {
+      fail('Property values must be strings, finite numbers, booleans, or null.');
+      return undefined;
+    }
+    // A row replaces the object's value for the same name.
+    if (propertyNames.indexOf(row.name) === -1) propertyNames.push(row.name);
+    properties[row.name] = row.value;
+    rowNames.push(row.name);
+  }
+  if (propertyNames.length > 50) {
+    fail('Send at most 50 custom data properties in total from the object and the table.');
+    return undefined;
+  }
+  return { properties: properties, propertyNames: propertyNames };
+};
+
 if (data.action === 'initialize') {
   const script = httpsUrl(data.scriptUrl);
   const endpoint = httpsUrl(data.endpoint);
@@ -324,6 +381,11 @@ if (data.action === 'initialize') {
     fail('Provide an HTTPS collector endpoint and a public website token.');
     return;
   }
+  const propResult = getProperties();
+  if (propResult === undefined) return;
+  const properties = propResult.properties;
+  const propertyNames = propResult.propertyNames;
+
   const encodedEndpoint = encodeUriComponent(data.endpoint);
   const encodedToken = encodeUriComponent(data.websiteToken);
   if (encodedEndpoint === undefined || encodedToken === undefined) {
@@ -331,8 +393,20 @@ if (data.action === 'initialize') {
     return;
   }
   // Script URL parameters configure the SDK before its automatic page view.
-  const url = data.scriptUrl + (script.search ? '&' : '?') +
+  let url = data.scriptUrl + (script.search ? '&' : '?') +
     'endpoint=' + encodedEndpoint + '&token=' + encodedToken;
+
+  for (let i = 0; i < propertyNames.length; i++) {
+    const propName = propertyNames[i];
+    const encodedName = encodeUriComponent(propName);
+    const encodedValue = encodeUriComponent(properties[propName]);
+    if (encodedName === undefined || encodedValue === undefined) {
+      fail('The custom data properties cannot be encoded.');
+      return;
+    }
+    url = url + '&cd.' + encodedName + '=' + encodedValue;
+  }
+
   if (!queryPermission('inject_script', url)) {
     fail('The SDK URL is not allowed by the template script permission.');
     return;
@@ -363,73 +437,10 @@ if (!validName(data.eventName, 100, '_.:-')) {
   return;
 }
 
-const validPropertyName = function(name) {
-  return validName(name, 64, '_.-') && name !== 'constructor' && name !== 'prototype';
-};
-const scalar = function(value) {
-  const type = getType(value);
-  return type === 'string' || type === 'boolean' || type === 'null' ||
-    (type === 'number' && value - value === 0);
-};
-
-// The custom data object and the property rows fill the event's customData.
-// An absent, null, or empty variable means no object, and an undefined value
-// means an absent property, as it would in JSON.
-const properties = {};
-const propertyNames = [];
-const customData = data.customData;
-if (customData !== undefined && customData !== null && customData !== '') {
-  if (getType(customData) !== 'object') {
-    fail('The custom data object must be a GTM variable that returns an object.');
-    return;
-  }
-  const keys = Object.keys(customData);
-  for (let i = 0; i < keys.length; i++) {
-    const value = customData[keys[i]];
-    if (value === undefined) continue;
-    if (!validPropertyName(keys[i])) {
-      fail('Custom data object property names must start with a letter; prototype names are not allowed.');
-      return;
-    }
-    if (!scalar(value)) {
-      fail('Custom data object values must be strings, finite numbers, booleans, or null; nested objects and arrays are not sent.');
-      return;
-    }
-    properties[keys[i]] = value;
-    propertyNames.push(keys[i]);
-    if (propertyNames.length > 50) {
-      fail('Send at most 50 custom data properties.');
-      return;
-    }
-  }
-}
-
-const rows = data.eventProperties === undefined ? [] : data.eventProperties;
-if (getType(rows) !== 'array' || rows.length > 50) {
-  fail('Custom data properties must be a table with at most 50 rows.');
-  return;
-}
-const rowNames = [];
-for (let i = 0; i < rows.length; i++) {
-  const row = rows[i];
-  if (getType(row) !== 'object' || !validPropertyName(row.name) ||
-      rowNames.indexOf(row.name) !== -1) {
-    fail('Use unique property names starting with a letter; prototype names are not allowed.');
-    return;
-  }
-  if (!scalar(row.value)) {
-    fail('Property values must be strings, finite numbers, booleans, or null.');
-    return;
-  }
-  // A row replaces the object's value for the same name.
-  if (propertyNames.indexOf(row.name) === -1) propertyNames.push(row.name);
-  properties[row.name] = row.value;
-  rowNames.push(row.name);
-}
-if (propertyNames.length > 50) {
-  fail('Send at most 50 custom data properties in total from the object and the table.');
-  return;
-}
+const propResult = getProperties();
+if (propResult === undefined) return;
+const properties = propResult.properties;
+const propertyNames = propResult.propertyNames;
 
 let goal = undefined;
 if (data.goalEvent !== undefined) {
@@ -998,6 +1009,109 @@ scenarios:
       assertApi('gtmOnFailure').wasCalled();
       assertApi('gtmOnSuccess').wasNotCalled();
     }
+- name: initializes the SDK with custom data in the script URL
+  code: |-
+    mock('queryPermission', function() { return true; });
+    const expectedUrl = 'https://analytics.example.com/aggregate.js?endpoint=https%3A%2F%2Fcollector.example.com%2Fapi%2Freceive&token=public-token&cd.app=verdant_source&cd.app_env=PROD&cd.collection_method=gtm';
+    mock('injectScript', function(url, onSuccess, onFailure, cacheToken) {
+      assertThat(url).isEqualTo(expectedUrl);
+      assertThat(cacheToken).isEqualTo(expectedUrl);
+      onSuccess();
+    });
+    mock('copyFromWindow', function(path) {
+      assertThat(path).isEqualTo('Aggregate.emit');
+      return function() {};
+    });
+    runCode({
+      action: 'initialize',
+      scriptUrl: 'https://analytics.example.com/aggregate.js',
+      endpoint: 'https://collector.example.com/api/receive',
+      websiteToken: 'public-token',
+      customData: {app: 'verdant_source', app_env: 'DEV'},
+      eventProperties: [{name: 'app_env', value: 'PROD'}, {name: 'collection_method', value: 'gtm'}]
+    });
+    assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: initializes the SDK with a custom data object alone
+  code: |-
+    mock('queryPermission', function() { return true; });
+    const expectedUrl = 'https://analytics.example.com/aggregate.js?min=1&endpoint=https%3A%2F%2Fcollector.example.com%2Fapi%2Freceive&token=public-token&cd.plan=pro&cd.amount=0';
+    mock('injectScript', function(url, onSuccess, onFailure, cacheToken) {
+      assertThat(url).isEqualTo(expectedUrl);
+      assertThat(cacheToken).isEqualTo(expectedUrl);
+      onSuccess();
+    });
+    mock('copyFromWindow', function() { return function() {}; });
+    runCode({
+      action: 'initialize',
+      scriptUrl: 'https://analytics.example.com/aggregate.js?min=1',
+      endpoint: 'https://collector.example.com/api/receive',
+      websiteToken: 'public-token',
+      customData: {plan: 'pro', amount: 0}
+    });
+    assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: initializes the SDK with custom data properties table alone
+  code: |-
+    mock('queryPermission', function() { return true; });
+    const expectedUrl = 'https://analytics.example.com/aggregate.js?min=1&endpoint=https%3A%2F%2Fcollector.example.com%2Fapi%2Freceive&token=public-token&cd.app=verdant_source&cd.app_env=PROD&cd.collection_method=gtm';
+    mock('injectScript', function(url, onSuccess, onFailure, cacheToken) {
+      assertThat(url).isEqualTo(expectedUrl);
+      assertThat(cacheToken).isEqualTo(expectedUrl);
+      onSuccess();
+    });
+    mock('copyFromWindow', function() { return function() {}; });
+    runCode({
+      action: 'initialize',
+      scriptUrl: 'https://analytics.example.com/aggregate.js?min=1',
+      endpoint: 'https://collector.example.com/api/receive',
+      websiteToken: 'public-token',
+      eventProperties: [
+        {name: 'app', value: 'verdant_source'},
+        {name: 'app_env', value: 'PROD'},
+        {name: 'collection_method', value: 'gtm'}
+      ]
+    });
+    assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: fails initialization if custom data property cannot be encoded
+  code: |-
+    mock('encodeUriComponent', function(value) {
+      if (value === 'unencodable') return undefined;
+      return encodeURIComponent(value);
+    });
+    runCode({
+      action: 'initialize',
+      scriptUrl: 'https://analytics.example.com/aggregate.js',
+      endpoint: 'https://collector.example.com/api/receive',
+      websiteToken: 'public-token',
+      customData: {prop: 'unencodable'}
+    });
+    assertApi('injectScript').wasNotCalled();
+    assertApi('gtmOnFailure').wasCalled();
+    assertApi('gtmOnSuccess').wasNotCalled();
+- name: rejects invalid custom data during initialization
+  code: |-
+    const invalidInputs = [
+      {customData: 'invalid'},
+      {customData: {'invalid space': 'value'}},
+      {customData: {plan: {nested: true}}},
+      {eventProperties: [{name: '', value: 'test'}]},
+      {eventProperties: [{name: 'plan', value: 'a'}, {name: 'plan', value: 'b'}]}
+    ];
+    for (let i = 0; i < invalidInputs.length; i++) {
+      runCode({
+        action: 'initialize',
+        scriptUrl: 'https://analytics.example.com/aggregate.js',
+        endpoint: 'https://collector.example.com/api/receive',
+        websiteToken: 'public-token',
+        customData: invalidInputs[i].customData,
+        eventProperties: invalidInputs[i].eventProperties
+      });
+      assertApi('injectScript').wasNotCalled();
+      assertApi('gtmOnFailure').wasCalled();
+      assertApi('gtmOnSuccess').wasNotCalled();
+    }
 
 
 ___NOTES___
@@ -1008,3 +1122,5 @@ Initialize once per page and sequence custom event tags after SDK loading.
 Supports optional conversion goal codes defined in config/goals.yaml.
 Custom data can come from an object variable (such as a Data Layer Variable
 named customData), a table of properties, or both; table rows win on conflicts.
+Custom data configured on the initialization tag is forwarded to the automatic
+initial page view via cd.<property> parameters on the script URL.
