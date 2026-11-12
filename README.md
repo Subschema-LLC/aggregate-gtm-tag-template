@@ -1,4 +1,8 @@
 # Aggregate Google Tag Manager template
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="aggregate-horizontal-reverse-brand-crimson.png">
+    <img alt="AGGREGATE by Subschema" src="aggregate-horizontal-color.png" width="600">
+</picture>
 
 [![CI](https://github.com/Subschema-LLC/aggregate-gtm-tag-template/actions/workflows/ci.yml/badge.svg)](https://github.com/Subschema-LLC/aggregate-gtm-tag-template/actions/workflows/ci.yml)
 
